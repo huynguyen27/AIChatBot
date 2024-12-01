@@ -9,3 +9,54 @@ npm install react-router-dom
 
 
 
+
+
+
+curl -X GET http://127.0.0.1:5000/api/test
+
+
+curl -X POST http://127.0.0.1:5000/api/signup \
+-H "Content-Type: application/json" \
+-d '{
+    "username": "testuser",
+    "password": "testpassword"
+}'
+
+curl -X POST http://127.0.0.1:5000/api/login \
+-H "Content-Type: application/json" \
+-d '{
+    "username": "testuser",
+    "password": "testpassword"
+}'
+
+curl -X GET http://127.0.0.1:5000/api/logout
+
+
+curl -X GET http://127.0.0.1:5000/api/conversations
+curl -X POST http://127.0.0.1:5000/api/conversations \
+-H "Content-Type: application/json" \
+-d '{
+    "name": "Test Conversation"
+}'
+curl -X PUT http://127.0.0.1:5000/api/conversations/1 \
+-H "Content-Type: application/json" \
+-d '{
+    "name": "Updated Conversation Name"
+}'
+
+curl -X PUT http://127.0.0.1:5000/api/conversations/1 \
+-H "Content-Type: application/json" \
+-d '{
+    "name": "Updated Conversation Name"
+}'
+
+
+curl -X DELETE http://127.0.0.1:5000/api/conversations/1
+
+
+
+curl -X POST http://127.0.0.1:5000/api/conversations/1/messages \
+-H "Content-Type: application/json" \
+-d '{
+    "text": "Hello, bot!"
+}'
