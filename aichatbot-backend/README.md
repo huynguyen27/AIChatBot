@@ -1,15 +1,15 @@
 # AI Chatbot Backend
 
-A Flask-based backend API for an AI chatbot application with user authentication and conversation management.
+A Flask-based backend API for an AI chatbot application with user authentication, conversation management, and user status tracking.
 
 ## Features
 - User authentication (signup/login)
+- User status tracking (online/offline)
 - Conversation management (create/read/update/delete)
 - Message handling with simulated bot responses
-- SQLite database (can be configured for PostgreSQL)
-- Database migrations using Flask-Migrate
+- SQLite database (configurable for PostgreSQL)
 - Session-based authentication
-- CORS support for frontend integration
+- User activity tracking (login/logout times)
 
 ## Project Structure
 ```
@@ -35,96 +35,110 @@ chatbot-backend/
 │       └── chat.py        # Chat-related routes
 ```
 
-## Prerequisites
-- Python 3.8 or higher
-- pip (Python package installer)
-- SQLite (included with Python) or PostgreSQL
+## Installation & Setup
 
-## Installation
-
-1. Clone the repository
+1. Clone the repository and create virtual environment:
 ```bash
-git clone <repository-url>
 cd chatbot-backend
-```
-
-2. Create and activate virtual environment
-```bash
 python -m venv venv
 venv\Scripts\activate  # On Windows
 source venv/bin/activate  # On macOS/Linux
 ```
 
-3. Install dependencies
+2. Install dependencies:
 ```bash
 python -m pip install flask flask-sqlalchemy flask-migrate flask-login python-dotenv flask-cors
 ```
 
-4. Create .env file
-```
-FLASK_APP=run.py
-FLASK_ENV=development
-SECRET_KEY=your-secret-key-here
-DATABASE_URL=sqlite:///app.db
-```
-
-5. Initialize the database
+3. Initialize database:
 ```bash
 python -m flask db init
 python -m flask db migrate -m "Initial migration"
 python -m flask db upgrade
 ```
 
-6. Run the application
+4. Run the application:
 ```bash
 python -m flask run
 ```
 
-The server will start at http://localhost:5000
-
 ## API Documentation
 
-### Authentication Endpoints
-
-#### Test Connection
+### 1. Test API
 ```
 GET /api/test
-Response: {"message": "Server is running"}
+Response: {
+    "message": "Server is running"
+}
 ```
 
-#### Register User
+### 2. Authentication APIs
+
+#### Register New User
 ```
 POST /api/signup
-Request: {
-    "username": string,
-    "password": string
+Request Body: {
+    "username": "string",
+    "password": "string"
 }
-Response: {"message": "User created successfully"}
+Response: {
+    "message": "User created successfully",
+    "user_id": integer
+}
+Error Response: {
+    "error": "Username already exists"
+} (400)
 ```
 
 #### Login
 ```
 POST /api/login
-Request: {
-    "username": string,
-    "password": string
+Request Body: {
+    "username": "string",
+    "password": "string"
 }
 Response: {
     "message": "Login successful",
     "user": {
         "id": integer,
-        "username": string
+        "user_id": integer,
+        "username": "string"
     }
 }
+Error Response: {
+    "error": "Invalid username or password"
+} (401)
 ```
 
 #### Logout
 ```
-GET /api/logout
-Response: {"message": "Logged out successfully"}
+POST /api/logout/{user_id}
+URL Parameters: user_id (integer)
+Response: {
+    "message": "User {user_id} logged out successfully"
+}
+Error Response: {
+    "error": "Cannot logout different user"
+} (403)
 ```
 
-### Conversation Endpoints
+#### Get User Status List
+```
+GET /api/users/status
+Response: {
+    "users": [
+        {
+            "user_id": integer,
+            "username": "string",
+            "status": "Online" | "Offline",
+            "last_login": "datetime string",
+            "last_logout": "datetime string"
+        }
+    ]
+}
+```
+
+### 3. Conversation APIs
 
 #### Get All Conversations
 ```
@@ -132,117 +146,120 @@ GET /api/conversations
 Response: [
     {
         "id": integer,
-        "name": string,
+        "name": "string",
         "messages": [
             {
                 "id": integer,
                 "sender": "user" | "bot",
-                "text": string,
-                "created_at": string
+                "text": "string",
+                "created_at": "datetime string"
             }
         ]
     }
 ]
+Authentication: Required
 ```
 
-#### Create Conversation
+#### Create New Conversation
 ```
 POST /api/conversations
-Request: {
-    "name": string
+Request Body: {
+    "name": "string"
 }
 Response: {
     "id": integer,
-    "name": string
+    "name": "string"
 }
+Authentication: Required
 ```
 
 #### Rename Conversation
 ```
 PUT /api/conversations/{conversation_id}
-Request: {
-    "name": string
+URL Parameters: conversation_id (integer)
+Request Body: {
+    "name": "string"
 }
 Response: {
     "id": integer,
-    "name": string
+    "name": "string"
 }
+Authentication: Required
 ```
 
 #### Delete Conversation
 ```
 DELETE /api/conversations/{conversation_id}
+URL Parameters: conversation_id (integer)
 Response: 204 No Content
+Authentication: Required
 ```
 
 #### Send Message
 ```
 POST /api/conversations/{conversation_id}/messages
-Request: {
-    "text": string
+URL Parameters: conversation_id (integer)
+Request Body: {
+    "text": "string"
 }
 Response: [
     {
         "id": integer,
         "sender": "user",
-        "text": string,
-        "created_at": string
+        "text": "string",
+        "created_at": "datetime string"
     },
     {
         "id": integer,
         "sender": "bot",
-        "text": string,
-        "created_at": string
+        "text": "string",
+        "created_at": "datetime string"
     }
 ]
+Authentication: Required
 ```
 
-## Database Management
-
-The project uses Flask-Migrate for database migrations. Key commands:
-
-```bash
-# Create new migration
-python -m flask db migrate -m "Migration description"
-
-# Apply migrations
-python -m flask db upgrade
-
-# Rollback migration
-python -m flask db downgrade
-```
-
-## Security Features
-- Password hashing using Werkzeug Security
-- Session-based authentication
-- CORS protection
-- SQL injection prevention through SQLAlchemy
-
-## Error Handling
+## Common HTTP Status Codes
+- 200: Success
+- 201: Created
+- 204: No Content
 - 400: Bad Request
 - 401: Unauthorized
 - 403: Forbidden
 - 404: Not Found
 - 500: Internal Server Error
 
-## Frontend Integration
-The backend is configured to work with a React frontend. CORS is enabled with credentials support. Frontend developers should set:
-```javascript
-axios.defaults.baseURL = 'http://localhost:5000';
-axios.defaults.withCredentials = true;
-axios.defaults.headers.common['Content-Type'] = 'application/json';
-```
+## User Status Management
+- Each user has a unique user_id assigned at registration
+- System tracks login/logout status and timestamps
+- User status can be monitored through the /api/users/status endpoint
+- Login/logout times are stored in UTC
 
-## Development Notes
-- Currently using SQLite for development
-- Can be configured to use PostgreSQL by updating DATABASE_URL in .env
-- Debug mode is enabled by default
-- Session lifetime is set to 30 minutes
+## Authentication Notes
+- Session-based authentication using Flask-Login
+- Sessions persist until explicit logout or server restart
+- Each user can only logout their own session
+- Login state is tracked in the database
 
-## Future Improvements
-- Add email verification
-- Implement password reset functionality
-- Add rate limiting
-- Enhance bot responses
-- Add user profiles
-- Implement real-time chat using WebSocket
+## Database Schema
+### User Table
+- id: Primary Key
+- user_id: Unique identifier
+- username: Unique username
+- password_hash: Hashed password
+- is_logged_in: Boolean status
+- last_login: Timestamp
+- last_logout: Timestamp
+
+### Conversation Table
+- id: Primary Key
+- name: Conversation name
+- user_id: Foreign Key to User
+- created_at: Timestamp
+
+### Message Table
+- id: Primary Key
+- sender: "user" or "bot"
+- text: Message content
+- conversation_id: Foreign Key to Conversation
+- created_at: Timestamp
