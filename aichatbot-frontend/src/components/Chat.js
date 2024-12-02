@@ -42,14 +42,16 @@ function Chat() {
   };
 
   const handleLogout = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
     try {
-      const response = await axios.post("/api/logout");
-      alert(response.data.message);
-      setAuth(null);
-      navigate("/login");
-    } catch (err) {
-      console.error("Logout failed:", err);
-      alert("An error occurred during logout.");
+      await fetch(`http://localhost:5000/api/logout/${user.user_id}`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      localStorage.removeItem('user');
+      navigate('/login');
+    } catch (error) {
+      console.error(error);
     }
   };
 
