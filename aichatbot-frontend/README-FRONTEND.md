@@ -110,15 +110,17 @@ aichatbot-frontend/
 ├── src/
 │   ├── components/
 │   │   ├── Chat.js
-│   │   ├── Login.js
-│   │   ├── Signup.js
-│   │   ├── Sidebar.js
+│   │   ├── ConversationItem.js
 │   │   ├── ConversationList.js
-│   │   └── ConversationItem.js
-│   ├── App.js
+│   │   ├── Login.js
+│   │   ├── Sidebar.js
+│   │   └── Signup.js
 │   ├── App.css
-│   ├── index.js
-│   └── index.css
+│   ├── App.js
+│   ├── index.css
+│   └── index.js
+├── .gitignore
+├── package-lock.json
 ├── package.json
 └── README-FRONTEND.md
 ```
