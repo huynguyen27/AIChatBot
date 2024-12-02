@@ -1,6 +1,3 @@
-// aichatbot-frontend/src/components/Signup.js
-// Create a signup form that collects a username and password and stores them in localStorage.
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -8,20 +5,26 @@ function Signup() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ username: "", password: "" });
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const userExists = users.find(
-      (user) => user.username === formData.username
-    );
-
-    if (userExists) {
-      alert("User already exists!");
-    } else {
-      users.push(formData);
-      localStorage.setItem("users", JSON.stringify(users));
-      alert("Signup successful!");
-      navigate("/login");
+    try {
+      const response = await fetch('http://localhost:5000/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      const data = await response.json();
+      if (data.message === "User created successfully") {
+        alert("Signup successful!");
+        navigate('/login');
+      } else {
+        alert(data.error || "Signup failed");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Signup failed");
     }
   };
 
@@ -49,7 +52,7 @@ function Signup() {
         />
         <button type="submit">Signup</button>
         <p>
-          Already have an account? <a href="/login">Login here</a>.
+          Already have an account? <a href="/login">Login here</a>
         </p>
       </form>
     </div>

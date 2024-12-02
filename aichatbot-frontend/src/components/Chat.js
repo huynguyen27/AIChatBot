@@ -3,79 +3,101 @@
 // We'll update the Chat component to handle multiple conversations and manage the sidebar's visibility.
 // By associating conversations with the current user, we ensure that each user has their own set of conversations. This prevents data from being mixed between different users and ensures persistence across sessions.
 // Description: Main chat interface updated to handle renaming and deleting conversations.
+// Now, update the Chat component to interact with the backend instead of using localStorage. We'll fetch conversations from the backend, manage them via state, and handle CRUD operations through API calls.
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Sidebar from "./Sidebar";
 import { useNavigate } from "react-router-dom";
+import axios from "../api/axios";
+import { AuthContext } from "../context/AuthContext";
 
 function Chat() {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState(null);
+  const { auth, setAuth } = useContext(AuthContext);
   const [input, setInput] = useState("");
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [error, setError] = useState("");
 
-  // Helper function to generate storage key based on username
-  const getConversationsKey = (username) => `conversations_${username}`;
-
-  // Load user and conversations from localStorage
+  // Fetch conversations from backend on mount
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("currentUser"));
-    if (!user) {
-      navigate("/login");
-    } else {
-      setCurrentUser(user);
-      const conversationsKey = getConversationsKey(user.username);
-      const savedConversations =
-        JSON.parse(localStorage.getItem(conversationsKey)) || [];
-      console.log("Loaded Conversations:", savedConversations); // Debug
-      setConversations(savedConversations);
-      if (savedConversations.length > 0) {
-        setActiveConversationId(savedConversations[0].id);
+    if (auth) {
+      fetchConversations();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth]);
+
+  const fetchConversations = async () => {
+    try {
+      const response = await axios.get("/api/conversations");
+      setConversations(response.data);
+      if (response.data.length > 0) {
+        setActiveConversationId(response.data[0].id);
       }
+    } catch (err) {
+      console.error("Error fetching conversations:", err);
+      setError("Failed to load conversations.");
     }
-  }, [navigate]);
-
-  // Save conversations to localStorage whenever they change
-  useEffect(() => {
-    if (currentUser) {
-      const conversationsKey = getConversationsKey(currentUser.username);
-      console.log("Saving Conversations to:", conversationsKey, conversations); // Debug
-      localStorage.setItem(conversationsKey, JSON.stringify(conversations));
-    }
-  }, [conversations, currentUser]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    navigate("/login");
   };
 
-  const handleSend = () => {
+  const handleLogout = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    try {
+      await fetch(`http://localhost:5000/api/logout/${user.user_id}`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      localStorage.removeItem('user');
+      navigate('/login');
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleSend = async () => {
     if (input.trim() === "" || activeConversationId === null) return;
 
-    const userMessage = { sender: "user", text: input };
-    const botMessage = { sender: "bot", text: `You said: ${input}` };
+    try {
+      // Send message to backend
+      const response = await axios.post(
+        `/api/conversations/${activeConversationId}/messages`,
+        { text: input }
+      );
+      const newMessage = response.data;
 
-    setConversations((prevConversations) =>
-      prevConversations.map((conv) =>
-        conv.id === activeConversationId
-          ? { ...conv, messages: [...conv.messages, userMessage, botMessage] }
-          : conv
-      )
-    );
+      // Update local state
+      setConversations((prevConversations) =>
+        prevConversations.map((conv) =>
+          conv.id === activeConversationId
+            ? { ...conv, messages: [...conv.messages, newMessage] }
+            : conv
+        )
+      );
 
-    setInput("");
+      setInput("");
+    } catch (err) {
+      console.error("Error sending message:", err);
+      alert("Failed to send message.");
+    }
   };
 
-  const handleCreateConversation = () => {
-    const newConversation = {
-      id: Date.now(),
-      name: `Conversation ${conversations.length + 1}`,
-      messages: [],
-    };
-    setConversations([newConversation, ...conversations]);
-    setActiveConversationId(newConversation.id);
+  const handleCreateConversation = async () => {
+    const name = prompt("Enter conversation name:");
+    if (!name || name.trim() === "") {
+      alert("Conversation name cannot be empty.");
+      return;
+    }
+
+    try {
+      const response = await axios.post("/api/conversations", { name });
+      const newConversation = response.data;
+      setConversations([newConversation, ...conversations]);
+      setActiveConversationId(newConversation.id);
+    } catch (err) {
+      console.error("Error creating conversation:", err);
+      alert("Failed to create conversation.");
+    }
   };
 
   const handleSelectConversation = (id) => {
@@ -83,29 +105,53 @@ function Chat() {
     setIsSidebarOpen(true);
   };
 
-  const handleRenameConversation = (id, newName) => {
-    setConversations((prevConversations) =>
-      prevConversations.map((conv) =>
-        conv.id === id ? { ...conv, name: newName } : conv
-      )
-    );
+  const handleRenameConversation = async (id, newName) => {
+    if (!newName || newName.trim() === "") {
+      alert("Conversation name cannot be empty.");
+      return;
+    }
+
+    try {
+      const response = await axios.put(`/api/conversations/${id}`, {
+        name: newName,
+      });
+      const updatedConversation = response.data;
+
+      setConversations((prevConversations) =>
+        prevConversations.map((conv) =>
+          conv.id === id ? updatedConversation : conv
+        )
+      );
+
+      if (activeConversationId === id) {
+        // Optionally update active conversation name
+      }
+    } catch (err) {
+      console.error("Error renaming conversation:", err);
+      alert("Failed to rename conversation.");
+    }
   };
 
-  const handleDeleteConversation = (id) => {
+  const handleDeleteConversation = async (id) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this conversation?"
     );
-    if (confirmDelete) {
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`/api/conversations/${id}`);
       setConversations((prevConversations) =>
         prevConversations.filter((conv) => conv.id !== id)
       );
-      // If the deleted conversation was active, set a new active conversation
-      if (id === activeConversationId && conversations.length > 1) {
+      if (activeConversationId === id && conversations.length > 1) {
         const newActive = conversations.find((conv) => conv.id !== id);
         setActiveConversationId(newActive ? newActive.id : null);
-      } else if (id === activeConversationId) {
+      } else if (activeConversationId === id) {
         setActiveConversationId(null);
       }
+    } catch (err) {
+      console.error("Error deleting conversation:", err);
+      alert("Failed to delete conversation.");
     }
   };
 
@@ -144,9 +190,9 @@ function Chat() {
 
         <div className="chat-messages">
           {activeConversation ? (
-            activeConversation.messages.map((msg, idx) => (
+            activeConversation.messages.map((msg) => (
               <div
-                key={idx}
+                key={msg.id}
                 className={`message ${msg.sender === "user" ? "user" : "bot"}`}
               >
                 <span>{msg.text}</span>
