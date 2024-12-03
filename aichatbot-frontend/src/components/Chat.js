@@ -19,6 +19,14 @@ function Chat() {
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [error, setError] = useState("");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    if (userData) {
+      setUser(userData);
+    }
+  }, []);
 
   // Fetch conversations from backend on mount
   useEffect(() => {
@@ -42,14 +50,14 @@ function Chat() {
   };
 
   const handleLogout = async () => {
-    const user = JSON.parse(localStorage.getItem('user'));
+    const user = JSON.parse(localStorage.getItem("user"));
     try {
       await fetch(`http://localhost:5000/api/logout/${user.user_id}`, {
-        method: 'POST',
-        credentials: 'include'
+        method: "POST",
+        credentials: "include",
       });
-      localStorage.removeItem('user');
-      navigate('/login');
+      localStorage.removeItem("user");
+      navigate("/login");
     } catch (error) {
       console.error(error);
     }
@@ -177,15 +185,25 @@ function Chat() {
       )}
       <div className="chat-main">
         <div className="chat-header">
-          <button className="toggle-sidebar-btn" onClick={toggleSidebar}>
-            {isSidebarOpen ? "Hide" : "Show"} History
-          </button>
-          <h2>
-            {activeConversation
-              ? activeConversation.name
-              : "No Conversation Selected"}
-          </h2>
-          <button onClick={handleLogout}>Logout</button>
+          <div className="header-left">
+            <button className="toggle-sidebar-btn" onClick={toggleSidebar}>
+              {isSidebarOpen ? "Hide" : "Show"} History
+            </button>
+            <h2>
+              {activeConversation
+                ? activeConversation.name
+                : "No Conversation Selected"}
+            </h2>
+          </div>
+          <div className="header-right">
+            {user && (
+              <div className="user-info">
+                <span className="username">@{user.username}</span>
+                <span className="user-id">(ID: {user.user_id})</span>
+              </div>
+            )}
+            <button onClick={handleLogout}>Logout</button>
+          </div>
         </div>
 
         <div className="chat-messages">

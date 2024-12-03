@@ -222,6 +222,34 @@ body {
   background: #c0392b;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.username {
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.user-id {
+  color: #666;
+}
+
 /* Chat Messages */
 .chat-messages {
   flex: 1;
