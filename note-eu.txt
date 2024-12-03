@@ -1,12 +1,21 @@
+------FRONTEND------
 node --version
 (v23.3.0)
 
 npx create-react-app aichatbot-frontend
 
 cd aichatbot-frontend
-npm install react-router-dom
+npm install react-router-dom axios
 
+npm install
+npm run
 
+------BACKEND------
+python -m flask db init
+python -m flask db migrate -m "Initial migration"
+python -m flask db upgrade
+
+------CURL COMMAND------
 curl -X GET http://127.0.0.1:5000/api/test
 
 curl -c cookies.txt -X POST http://127.0.0.1:5000/api/signup \
