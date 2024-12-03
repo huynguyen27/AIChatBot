@@ -1,0 +1,7 @@
+groq
+flask
+flask-sqlalchemy
+flask-migrate
+flask-login
+python-dotenv
+flask-cors
